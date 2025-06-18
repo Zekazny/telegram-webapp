@@ -9,15 +9,27 @@ function App() {
   const [type, setType] = useState("plan");
   const [loading, setLoading] = useState(false);
 
-  // Укажи адрес своего бэкенда
-  const API_URL = "https://YOUR_API_DOMAIN/api"; // или process.env.REACT_APP_API_URL
+  // Укажи свой реальный API_URL
+  const API_URL = "https://YOUR_API_DOMAIN/api";
 
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.expand();
-      const uid = window.Telegram.WebApp.initDataUnsafe?.user?.id || null;
+      let data = window.Telegram.WebApp.initDataUnsafe;
+      // Обработка случая, когда initDataUnsafe — строка
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch (e) {
+          data = {};
+        }
+      }
+      console.log("initDataUnsafe:", data);
+      const uid = data?.user?.id || null;
       setUserId(uid);
       if (uid) fetchTasks(uid);
+    } else {
+      console.log("Не в Telegram WebApp");
     }
   }, []);
 
