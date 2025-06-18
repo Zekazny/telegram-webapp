@@ -3,14 +3,16 @@ import React, { useEffect, useState } from "react";
 function App() {
   const [userId, setUserId] = useState(null);
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState("");
+  const [client, setClient] = useState("");
+  const [task, setTask] = useState("");
+  const [hours, setHours] = useState("");
+  const [type, setType] = useState("plan");
   const [loading, setLoading] = useState(false);
 
-  // Укажи свой API-адрес для деплоя, иначе оставить /api/
-  const API_URL = process.env.REACT_APP_API_URL || "https://YOUR_API_DOMAIN/api";
+  // Укажи адрес своего бэкенда
+  const API_URL = "https://YOUR_API_DOMAIN/api"; // или process.env.REACT_APP_API_URL
 
   useEffect(() => {
-    // Получаем user_id через Telegram WebApp API
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.expand();
       const uid = window.Telegram.WebApp.initDataUnsafe?.user?.id || null;
@@ -28,53 +30,79 @@ function App() {
   };
 
   const handleAddTask = () => {
-    if (!newTask.trim()) return;
+    if (!task.trim() || !client.trim() || !hours || !userId) return;
     setLoading(true);
     fetch(`${API_URL}/add_task`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: userId,
-        text: newTask.trim()
+        client: client.trim(),
+        task: task.trim(),
+        hours: Number(hours),
+        type: type
       })
-    })
-      .then(() => {
-        setNewTask("");
-        fetchTasks(userId);
-      })
-      .finally(() => setLoading(false));
+    }).then(() => {
+      setTask("");
+      setClient("");
+      setHours("");
+      setType("plan");
+      fetchTasks(userId);
+    }).finally(() => setLoading(false));
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 500, margin: "0 auto" }}>
-      <h2>Telegram WebApp интерфейс</h2>
-      <div style={{ marginBottom: 16 }}>
-        Ваш Telegram user_id: <b>{userId || "не определён"}</b>
+    <div style={{ padding: 20, maxWidth: 500, margin: "0 auto", fontFamily: "sans-serif" }}>
+      <h2 style={{marginBottom: 12}}>Мои задачи в Telegram WebApp</h2>
+      <div style={{marginBottom: 16}}>
+        <b>user_id:</b> {userId || <span style={{color:'gray'}}>не определён</span>}
       </div>
-      <div style={{ display: "flex", gap: 8 }}>
+      <div style={{display:'flex', flexDirection:'column', gap:8, marginBottom:24}}>
         <input
-          value={newTask}
-          onChange={e => setNewTask(e.target.value)}
-          placeholder="Новая задача"
-          style={{ flex: 1 }}
+          placeholder="Клиент"
+          value={client}
+          onChange={e => setClient(e.target.value)}
         />
-        <button onClick={handleAddTask} disabled={!newTask.trim() || !userId || loading}>
-          {loading ? "..." : "Добавить"}
+        <input
+          placeholder="Задача"
+          value={task}
+          onChange={e => setTask(e.target.value)}
+        />
+        <input
+          placeholder="Часы"
+          type="number"
+          min="0"
+          value={hours}
+          onChange={e => setHours(e.target.value)}
+        />
+        <select value={type} onChange={e => setType(e.target.value)}>
+          <option value="plan">План</option>
+          <option value="done">Выполнено</option>
+        </select>
+        <button
+          onClick={handleAddTask}
+          disabled={!task.trim() || !client.trim() || !hours || !userId || loading}
+        >
+          {loading ? "Сохраняю..." : "Добавить задачу"}
         </button>
       </div>
       <hr />
       <div>
-        <h3>Ваши задачи:</h3>
+        <h3>Список задач:</h3>
         {loading && <div>Загрузка...</div>}
-        {(!tasks || tasks.length === 0) && !loading && <div>Нет задач</div>}
-        <ul>
+        {!loading && tasks.length === 0 && <div>Нет задач</div>}
+        <ul style={{padding:0, listStyle:"none"}}>
           {tasks.map((t, idx) => (
-            <li key={idx}>
-              <b>{t.task || t.text}</b>
-              {t.client ? <> для <i>{t.client}</i></> : null}
-              {t.week ? <> — неделя {t.week}</> : null}
-              {t.type ? <> — <span style={{color: t.type === "done" ? "green" : "blue"}}>{t.type}</span></> : null}
-              {t.hours ? <> — {t.hours} ч.</> : null}
+            <li key={idx} style={{
+              background:"#f4f4f4", marginBottom:8, padding:12, borderRadius:8
+            }}>
+              <div>
+                <b>{t.task || t.text}</b> <span style={{color:'#888'}}>{t.client && `для ${t.client}`}</span>
+              </div>
+              <div style={{fontSize:13}}>
+                {t.week && <>Неделя: {t.week} • </>}
+                {t.type && <span style={{color: t.type==="done"?"green":"blue"}}>{t.type==="done"?"Выполнено":"План"}</span>} • {t.hours} ч.
+              </div>
             </li>
           ))}
         </ul>
