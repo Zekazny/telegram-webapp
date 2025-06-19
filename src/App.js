@@ -10,7 +10,7 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   // Укажи свой реальный API_URL
-  const API_URL = "https://YOUR_API_DOMAIN/api";
+  const API_URL = "https://telegram-webapp-neon.vercel.app";
 
   useEffect(() => {
     if (window.Telegram && window.Telegram.WebApp) {
